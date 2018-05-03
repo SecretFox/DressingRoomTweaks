@@ -155,14 +155,14 @@ class com.fox.DRTweaks.Mod {
 	
 	private function HookLayout(dv:DistributedValue){
 		if (dv.GetValue()){
-			keyListener = new Object();
-			keyListener.onKeyDown = Delegate.create(this, KeyPressedBuffer);
-			Key.addListener(keyListener);
 			m_DressingRoom = _root.dressingroom;
 			if (!m_DressingRoom.Layout || !m_DressingRoom.m_LeftPanel.m_Background || !m_DressingRoom.m_RightPanel.m_Background ){
 				setTimeout(Delegate.create(this, HookLayout), 50, dv);
 				return
 			}
+			keyListener = new Object();
+			keyListener.onKeyDown = Delegate.create(this, KeyPressedBuffer);
+			Key.addListener(keyListener);
 			if (!m_DressingRoom._Layout){
 				m_DressingRoom._Layout = m_DressingRoom.Layout;
 				m_DressingRoom.Layout = function(){
