@@ -10,3 +10,6 @@ First you have to click scrollbar on the left panel, after that you can use:
 * Backspace to clear preview.  
 * Esc to close the dressing room.  
 * V to toggle vanity camera.
+
+[![alt text](https://i.imgur.com/bFEPBzA.gif "Download")](https://github.com/SecretFox/DressingRoomTweaks/releases)  
+Install: unzip to `SWL\Data\Gui\Custom\Flash`
