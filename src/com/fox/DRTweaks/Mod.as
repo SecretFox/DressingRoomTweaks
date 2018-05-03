@@ -4,6 +4,7 @@
  */
 import com.GameInterface.DistributedValue;
 import com.GameInterface.DistributedValueBase;
+import com.GameInterface.Game.CharacterBase;
 import com.Utils.Archive;
 import flash.geom.Point;
 import com.fox.Utils.Common;
@@ -82,7 +83,10 @@ class com.fox.DRTweaks.Mod {
 		//private var
 		if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 0){
 			var selected = m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"];
+			// up or down,previews first color
 			if (Keycode == 40 || Keycode == 38){
+				m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
+				m_DressingRoom.m_RightPanel["ClearPreview"]();
 				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 					type:"change",
 					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][0]
@@ -91,31 +95,60 @@ class com.fox.DRTweaks.Mod {
 					type:"itemClick",
 					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][0]
 				});
+				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = 0;
 			}
+			//right
 			else if (Keycode == 39){
-				if (m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][selected + 1]){
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = selected + 1;
+				var idx = selected + 1;
+				if (!m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]){
+					idx = 0
+				}
+				if(idx != selected){
+					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
 					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 						type:"change",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][selected + 1]
+						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
 					});
 					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 						type:"itemClick",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][selected + 1]
+						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
 					})
 				}
-			}else if (Keycode == 37){
-				if (m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][selected - 1]){
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = selected - 1;
+			}
+			//left
+			else if (Keycode == 37){
+				var idx = selected -1;
+				if (!m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]){
+					idx = m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"].length-1;
+				}
+				if(idx != selected){
+					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
 					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 						type:"change",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][selected - 1]
+						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
 					});
 					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 						type:"itemClick",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][selected - 1]
+						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
 					})
 				}
+			}
+			//ESC
+			else if (Keycode == 27){
+				DressingRoomDval.SetValue(false);
+			}
+			//backspace
+			else if (Keycode == 8){
+				m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
+				m_DressingRoom.m_RightPanel["ClearPreview"]();
+			}
+			//Enter
+			else if (Keycode == 13){
+				m_DressingRoom.m_RightPanel["ConfirmSelection"]();
+			}
+			//Fixed vanity mode
+			else if (Keycode == 86){
+				CharacterBase.ToggleVanityMode(true);
 			}
 		}
 	}
@@ -142,6 +175,9 @@ class com.fox.DRTweaks.Mod {
 				}
 			}
 			m_DressingRoom.Layout();
+			// cant click what you cant see
+			m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
+
 			m_DressingRoom.m_LeftPanel.m_Background.onPress = Delegate.create(this, MoveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onRelease = Delegate.create(this, SaveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveLeft);
