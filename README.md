@@ -1,9 +1,9 @@
 # DressingRoomTweaks  
-Allows dragging of dressing room left/right panels, position gets saved.  
+Lets you move dressing room left/right panels, position gets saved.  
 Panels must be dragged from the background(not title).  
 
 **Keyboard control**  
-First you have to click scrollbar on the left panel once, after that you can use;  
+First you have to click scrollbar on the left panel, after that you can use:  
 * Up/Down to scroll through clothes.  
 * Left/Right to cycle through colours.  
 * Enter to equip cloth.  
