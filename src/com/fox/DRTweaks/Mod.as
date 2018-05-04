@@ -225,7 +225,7 @@ class com.fox.DRTweaks.Mod {
 	private function HookLayout(dv:DistributedValue){
 		if (dv.GetValue()){
 			m_DressingRoom = _root.dressingroom;
-			if (!m_DressingRoom.Layout || !m_DressingRoom.m_LeftPanel.m_Background || !m_DressingRoom.m_RightPanel.m_Background || !m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar ){
+			if (!m_DressingRoom.Layout || !m_DressingRoom.m_LeftPanel.m_Background || !m_DressingRoom.m_RightPanel.m_Background){
 				setTimeout(Delegate.create(this, HookLayout), 50, dv);
 				return
 			}
