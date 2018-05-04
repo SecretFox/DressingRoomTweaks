@@ -83,7 +83,7 @@ class com.fox.DRTweaks.Mod {
 	}
 	private function KeyPressedBuffer(){
 		clearTimeout(KeyPresstimeOut);
-		KeyPresstimeOut = setTimeout(Delegate.create(this, KeyPressed), 100, Key.getCode());
+		KeyPresstimeOut = setTimeout(Delegate.create(this, KeyPressed), 100, Key.getCode(),Key.isDown(Key.CONTROL));
 	}
 	private function FindNextOwned(Entries:Array, direction, idx){
 		var retVal:Number = idx;
@@ -104,8 +104,29 @@ class com.fox.DRTweaks.Mod {
 	}
 	
 	
-	private function KeyPressed(Keycode){
+	private function KeyPressed(Keycode,Control){
 		//private var
+		if (Control && (Keycode == 40 || Keycode == 38)){
+			var idx = 0;
+			for (var i:Number = 0; i < m_DressingRoom.m_LeftPanel["m_TabArray"].length; i++){
+				if (m_DressingRoom.m_LeftPanel["m_TabGroup"].selectedButton == m_DressingRoom.m_LeftPanel["m_TabArray"][i]){
+					if (Keycode == 40){
+						idx = i+1;
+						if (!m_DressingRoom.m_LeftPanel["m_TabArray"][idx]){
+							return
+						}
+					}else{
+						idx = i-1;
+						if (!m_DressingRoom.m_LeftPanel["m_TabArray"][idx]){
+							return
+						}
+					}
+					m_DressingRoom.m_LeftPanel["m_TabGroup"].setSelectedButton(m_DressingRoom.m_LeftPanel["m_TabArray"][idx]);
+					break
+				}
+			}
+			return
+		}
 		if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 0){
 			var selected = m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"];
 			// up or down,previews first color
@@ -194,13 +215,17 @@ class com.fox.DRTweaks.Mod {
 			else if (Keycode == 86){
 				CharacterBase.ToggleVanityMode(true);
 			}
+			// WASD, close window
+			else if(Keycode == 87 || Keycode == 83 || Keycode == 65 || Keycode == 68){
+				DressingRoomDval.SetValue(false);
+			}
 		}
 	}
 	
 	private function HookLayout(dv:DistributedValue){
 		if (dv.GetValue()){
 			m_DressingRoom = _root.dressingroom;
-			if (!m_DressingRoom.Layout || !m_DressingRoom.m_LeftPanel.m_Background || !m_DressingRoom.m_RightPanel.m_Background ){
+			if (!m_DressingRoom.Layout || !m_DressingRoom.m_LeftPanel.m_Background || !m_DressingRoom.m_RightPanel.m_Background || !m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar ){
 				setTimeout(Delegate.create(this, HookLayout), 50, dv);
 				return
 			}
@@ -241,7 +266,9 @@ class com.fox.DRTweaks.Mod {
 			TxtField.text = "Unowned Colours:"
 			TxtField._x -= TxtField._width;
 			
-
+			Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
+			m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "TabChanged");
+			
 			m_DressingRoom.m_LeftPanel.m_Background.onPress = Delegate.create(this, MoveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onRelease = Delegate.create(this, SaveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveLeft);
@@ -253,8 +280,10 @@ class com.fox.DRTweaks.Mod {
 			Key.removeListener(keyListener);
 		}
 	}
-	
 	private function CheckboxChanged(event){
 		OwnedOnly = m_colorCheckbox.selected;
+	}
+	private function TabChanged(){
+		Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
 	}
 }
