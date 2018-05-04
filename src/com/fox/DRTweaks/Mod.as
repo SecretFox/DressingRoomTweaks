@@ -2,6 +2,7 @@
  * ...
  * @author fox
  */
+import com.GameInterface.AccountManagement;
 import com.GameInterface.DistributedValue;
 import com.GameInterface.DistributedValueBase;
 import com.GameInterface.DressingRoom;
@@ -10,7 +11,6 @@ import com.Utils.Archive;
 import flash.geom.Point;
 import com.fox.Utils.Common;
 import mx.utils.Delegate;
-
 
 class com.fox.DRTweaks.Mod {
 
@@ -22,24 +22,31 @@ class com.fox.DRTweaks.Mod {
 	private var DressingRoomRightY:DistributedValue;
 	private var m_DressingRoom:MovieClip;
 	private var keyListener:Object;
+	private var focusListener:Object;
 	private var KeyPresstimeOut;
 	private var m_colorCheckbox:MovieClip;
 	private var OwnedOnly:Boolean = false;
 	
 	public function Mod(root) {
 		m_swfroot = root;
-	}
-	public function Load() {
+		keyListener = new Object();
+		keyListener.onKeyDown = Delegate.create(this, KeyPressedBuffer);
 		DressingRoomLeftX = DistributedValue.Create("DressingRoomLeftX");
 		DressingRoomLeftY = DistributedValue.Create("DressingRoomLeftY");
 		DressingRoomRightX = DistributedValue.Create("DressingRoomRightX");
 		DressingRoomRightY = DistributedValue.Create("DressingRoomRightY");
 		DressingRoomDval = DistributedValue.Create("dressingRoom_window");
+		focusListener = new Object();
+		focusListener.onSetFocus = Delegate.create(this, FocusChanged);
+	}
+	public function Load() {
+
 		DressingRoomDval.SignalChanged.Connect(HookLayout, this);
 	}
 	public function Unload() {
 		DressingRoomDval.SignalChanged.Disconnect(HookLayout, this);
 		Key.removeListener(keyListener);
+		Selection.removeListener(focusListener);
 	}
 	public function Activate(config:Archive){
 		DressingRoomLeftX.SetValue(config.FindEntry("DressingRoomLeftX", 100));
@@ -104,8 +111,7 @@ class com.fox.DRTweaks.Mod {
 	}
 	
 	
-	private function KeyPressed(Keycode,Control){
-		//private var
+	private function KeyPressed(Keycode, Control){
 		if (Control && (Keycode == 40 || Keycode == 38)){
 			var idx = 0;
 			for (var i:Number = 0; i < m_DressingRoom.m_LeftPanel["m_TabArray"].length; i++){
@@ -127,98 +133,107 @@ class com.fox.DRTweaks.Mod {
 			}
 			return
 		}
+		var Modevariable:String;
+		var ListVariable:String;
 		if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 0){
-			var selected = m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"];
-			// up or down,previews first color
-			if (Keycode == 40 || Keycode == 38){
-				m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
-				m_DressingRoom.m_RightPanel["ClearPreview"]();
-				var idx = 0;
-				if(!OwnedOnly){
-					if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx].m_NodeId)){
-						idx = FindNextOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"], 1, idx);
-						if (idx == undefined) return;
-					}
+			Modevariable = "m_ColorPicker"
+			ListVariable = "m_ColorTileList"
+		}else if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 1 || m_DressingRoom.m_RightPanel["m_CurrentMode"] == 28101 || m_DressingRoom.m_RightPanel["m_CurrentMode"] == 102){
+			Modevariable = "m_ItemSelector"
+			ListVariable = "m_ItemList"
+		}
+		var selected = m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["_selectedIndex"];
+		// up or down,previews first color
+		if (Keycode == 40 || Keycode == 38){
+			m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
+			m_DressingRoom.m_RightPanel["ClearPreview"]();
+			var idx = 0;
+			if(!OwnedOnly){
+				if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx].m_NodeId)){
+					idx = FindNextOwned(m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"], 1, idx);
+					if (idx == undefined) return;
 				}
-				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
+			}
+			m_DressingRoom.m_RightPanel[Modevariable][ListVariable].dispatchEvent({
+				type:"change",
+				item:m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]
+			});
+			m_DressingRoom.m_RightPanel[Modevariable][ListVariable].dispatchEvent({
+				type:"itemClick",
+				item:m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]
+			});
+			m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["selectedIndex"] = idx;
+		}
+		//right
+		else if (Keycode == 39){
+			var idx = selected + 1;
+			if (!m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]){
+				idx = 0
+			}
+			if(!OwnedOnly){
+				if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx].m_NodeId)){
+					idx = FindNextOwned(m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"], 1, idx);
+					if (idx == undefined) return;
+				}
+			}
+			if(idx != selected){
+				m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["selectedIndex"] = idx;
+				m_DressingRoom.m_RightPanel[Modevariable][ListVariable].dispatchEvent({
 					type:"change",
-					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
+					item:m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]
 				});
-				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
+				m_DressingRoom.m_RightPanel[Modevariable][ListVariable].dispatchEvent({
 					type:"itemClick",
-					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
+					item:m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]
+				})
+			}
+		}
+		//left
+		else if (Keycode == 37){
+			var idx = selected -1;
+			if (!m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]){
+				idx = m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"].length-1;
+			}
+			if(!OwnedOnly){
+				if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx].m_NodeId)){
+					idx = FindNextOwned(m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"], -1, idx);
+					if (idx == undefined) return;
+				}
+			}
+			if(idx != selected){
+				m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["selectedIndex"] = idx;
+				m_DressingRoom.m_RightPanel[Modevariable][ListVariable].dispatchEvent({
+					type:"change",
+					item:m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]
 				});
-				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
+				m_DressingRoom.m_RightPanel[Modevariable][ListVariable].dispatchEvent({
+					type:"itemClick",
+					item:m_DressingRoom.m_RightPanel[Modevariable][ListVariable]["dataProvider"][idx]
+				})
 			}
-			//right
-			else if (Keycode == 39){
-				var idx = selected + 1;
-				if (!m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]){
-					idx = 0
-				}
-				if(!OwnedOnly){
-					if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx].m_NodeId)){
-						idx = FindNextOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"], 1, idx);
-						if (idx == undefined) return;
-					}
-				}
-				if(idx != selected){
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
-						type:"change",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
-					});
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
-						type:"itemClick",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
-					})
-				}
-			}
-			//left
-			else if (Keycode == 37){
-				var idx = selected -1;
-				if (!m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]){
-					idx = m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"].length-1;
-				}
-				if(!OwnedOnly){
-					if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx].m_NodeId)){
-						idx = FindNextOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"], -1, idx);
-						if (idx == undefined) return;
-					}
-				}
-				if(idx != selected){
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
-						type:"change",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
-					});
-					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
-						type:"itemClick",
-						item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
-					})
-				}
-			}
-			//ESC
-			else if (Keycode == 27){
-				DressingRoomDval.SetValue(false);
-			}
-			//backspace
-			else if (Keycode == 8){
-				m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
-				m_DressingRoom.m_RightPanel["ClearPreview"]();
-			}
-			//Enter
-			else if (Keycode == 13){
-				m_DressingRoom.m_RightPanel["ConfirmSelection"]();
-			}
-			//Fixed vanity mode
-			else if (Keycode == 86){
-				CharacterBase.ToggleVanityMode(true);
-			}
-			// WASD, close window
-			else if(Keycode == 87 || Keycode == 83 || Keycode == 65 || Keycode == 68){
-				DressingRoomDval.SetValue(false);
-			}
+		}
+		//ESC
+		else if (Keycode == 27){
+			DressingRoomDval.SetValue(false);
+		}
+		//backspace
+		else if (Keycode == 8){
+			m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
+			m_DressingRoom.m_RightPanel["ClearPreview"]();
+		}
+		//Enter
+		else if (Keycode == 13){
+			m_DressingRoom.m_RightPanel["ConfirmSelection"]();
+		}
+		//Fixed vanity mode
+		else if (Keycode == 86){
+			CharacterBase.ToggleVanityMode(true);
+		}
+		// Close window
+		else if (Keycode == 87 || Keycode == 83 || Keycode == 65 || Keycode == 68){
+			m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
+			m_DressingRoom.m_RightPanel["ClearPreview"]();
+			DressingRoomDval.SetValue(false);
 		}
 	}
 	
@@ -229,9 +244,6 @@ class com.fox.DRTweaks.Mod {
 				setTimeout(Delegate.create(this, HookLayout), 50, dv);
 				return
 			}
-			keyListener = new Object();
-			keyListener.onKeyDown = Delegate.create(this, KeyPressedBuffer);
-			Key.addListener(keyListener);
 			if (!m_DressingRoom._Layout){
 				m_DressingRoom._Layout = m_DressingRoom.Layout;
 				m_DressingRoom.Layout = function(){
@@ -265,7 +277,8 @@ class com.fox.DRTweaks.Mod {
 			TxtField.embedFonts = true;
 			TxtField.text = "Unowned Colours:"
 			TxtField._x -= TxtField._width;
-			
+
+			Selection.addListener(focusListener);
 			Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
 			m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "TabChanged");
 			
@@ -278,6 +291,31 @@ class com.fox.DRTweaks.Mod {
 			m_DressingRoom.m_RightPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveRight)
 		}else{
 			Key.removeListener(keyListener);
+			Selection.removeListener(focusListener);
+		}
+	}
+	private function FocusCall(){
+		Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
+	}
+	// hacky af
+	// should set the scrollbar active when player finishes searching, or clicks item/color/Checkbox
+	private function FocusChanged(oldFocus:MovieClip, newFocus:MovieClip){
+		//com.GameInterface.UtilsBase.PrintChatText("1 :" + string(oldFocus._name) + " " + newFocus._name);
+		//com.GameInterface.UtilsBase.PrintChatText("2 :" + string(oldFocus._parent) + " " + newFocus._parent);
+		//com.GameInterface.UtilsBase.PrintChatText("3 :"+string(oldFocus._parent._name) + " " + newFocus._parent._name);
+		Key.removeListener(keyListener);
+		if (newFocus._name == "m_SearchText") return;
+		if (oldFocus._name == "m_SearchText"){
+			setTimeout(Delegate.create(this, FocusCall), 25);
+		}
+		else if (newFocus._name == "_scrollBar"){
+			Key.addListener(keyListener);
+		}
+		else if (oldFocus._parent._name == "m_ColorPicker" && !newFocus ){
+			setTimeout(Delegate.create(this, FocusCall), 25);
+		}
+		else if (newFocus._name == "m_ownedColorCheckbox" || newFocus._name == "m_UnownedCheckBox"){
+			setTimeout(Delegate.create(this, FocusCall), 50);
 		}
 	}
 	private function CheckboxChanged(event){
