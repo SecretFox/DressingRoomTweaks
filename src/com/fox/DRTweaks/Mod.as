@@ -2,7 +2,6 @@
  * ...
  * @author fox
  */
-import com.GameInterface.AccountManagement;
 import com.GameInterface.DistributedValue;
 import com.GameInterface.DistributedValueBase;
 import com.GameInterface.DressingRoom;
