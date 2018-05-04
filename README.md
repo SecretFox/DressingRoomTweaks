@@ -16,7 +16,8 @@ When disabled Left/Right arrow keys will skip unowned colors.
 If there are no available colors then clothing won't be previewed.
   
 **Known Issues**  
-* Weapon Skins and Clothing sets are currently unsupported  
+* When switching from chat back to dressing room, user has to click on checkbox/scrollbar/searchfield for keybinds to work again.  
+* When switching from searchbar to chat input, user has to double click to start typing.
 
 [![alt text](https://i.imgur.com/812P61A.png "Download")](https://github.com/SecretFox/DressingRoomTweaks/releases)  
 Install: unzip to `SWL\Data\Gui\Custom\Flash`
