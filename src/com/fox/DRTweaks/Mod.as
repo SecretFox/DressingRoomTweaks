@@ -4,6 +4,7 @@
  */
 import com.GameInterface.DistributedValue;
 import com.GameInterface.DistributedValueBase;
+import com.GameInterface.DressingRoom;
 import com.GameInterface.Game.CharacterBase;
 import com.Utils.Archive;
 import flash.geom.Point;
@@ -22,6 +23,8 @@ class com.fox.DRTweaks.Mod {
 	private var m_DressingRoom:MovieClip;
 	private var keyListener:Object;
 	private var KeyPresstimeOut;
+	private var m_colorCheckbox:MovieClip;
+	private var OwnedOnly:Boolean = false;
 	
 	public function Mod(root) {
 		m_swfroot = root;
@@ -43,6 +46,8 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomLeftY.SetValue(config.FindEntry("DressingRoomLeftY", undefined));
 		DressingRoomRightX.SetValue(config.FindEntry("DressingRoomRightX", undefined));
 		DressingRoomRightY.SetValue(config.FindEntry("DressingRoomRightY", undefined));
+		OwnedOnly = Boolean(config.FindEntry("OwnedOnly", true));
+		
 		HookLayout(DressingRoomDval);
 	}
 	public function Deactivate():Archive {
@@ -50,7 +55,8 @@ class com.fox.DRTweaks.Mod {
 		config.AddEntry("DressingRoomLeftX",DressingRoomLeftX.GetValue());
 		config.AddEntry("DressingRoomLeftY",DressingRoomLeftY.GetValue());
 		config.AddEntry("DressingRoomRightX",DressingRoomRightX.GetValue());
-		config.AddEntry("DressingRoomRightY",DressingRoomRightY.GetValue());
+		config.AddEntry("DressingRoomRightY", DressingRoomRightY.GetValue());
+		config.AddEntry("OwnedOnly",OwnedOnly);
 		return config
 	}
 	private function MoveLeft(){
@@ -79,6 +85,25 @@ class com.fox.DRTweaks.Mod {
 		clearTimeout(KeyPresstimeOut);
 		KeyPresstimeOut = setTimeout(Delegate.create(this, KeyPressed), 100, Key.getCode());
 	}
+	private function FindNextOwned(Entries:Array, direction, idx){
+		var retVal:Number = idx;
+		if (direction > 0){
+			for (var i:Number = 0; i < Entries.length; i++){
+				var pos = i + idx;
+				if (!Entries[pos]) pos -= Entries.length;
+				if (DressingRoom.NodeOwned(Entries[pos].m_NodeId)) return pos;
+ 			}
+		}else{
+			for (var i:Number = 0; i < Entries.length; i++){
+				var pos = idx-i;
+				if (!Entries[pos]) pos += Entries.length;
+				if (DressingRoom.NodeOwned(Entries[pos].m_NodeId)) return pos;
+ 			}
+		}
+		return undefined
+	}
+	
+	
 	private function KeyPressed(Keycode){
 		//private var
 		if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 0){
@@ -87,21 +112,34 @@ class com.fox.DRTweaks.Mod {
 			if (Keycode == 40 || Keycode == 38){
 				m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
 				m_DressingRoom.m_RightPanel["ClearPreview"]();
+				var idx = 0;
+				if(!OwnedOnly){
+					if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx].m_NodeId)){
+						idx = FindNextOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"], 1, idx);
+						if (idx == undefined) return;
+					}
+				}
 				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 					type:"change",
-					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][0]
+					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
 				});
 				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"].dispatchEvent({
 					type:"itemClick",
-					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][0]
+					item:m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]
 				});
-				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = 0;
+				m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
 			}
 			//right
 			else if (Keycode == 39){
 				var idx = selected + 1;
 				if (!m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]){
 					idx = 0
+				}
+				if(!OwnedOnly){
+					if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx].m_NodeId)){
+						idx = FindNextOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"], 1, idx);
+						if (idx == undefined) return;
+					}
 				}
 				if(idx != selected){
 					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
@@ -120,6 +158,12 @@ class com.fox.DRTweaks.Mod {
 				var idx = selected -1;
 				if (!m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx]){
 					idx = m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"].length-1;
+				}
+				if(!OwnedOnly){
+					if (!DressingRoom.NodeOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"][idx].m_NodeId)){
+						idx = FindNextOwned(m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["dataProvider"], -1, idx);
+						if (idx == undefined) return;
+					}
 				}
 				if(idx != selected){
 					m_DressingRoom.m_RightPanel["m_ColorPicker"]["m_ColorTileList"]["selectedIndex"] = idx;
@@ -175,8 +219,28 @@ class com.fox.DRTweaks.Mod {
 				}
 			}
 			m_DressingRoom.Layout();
+			var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
+			var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
+			var format = label.getTextFormat();
 			// cant click what you cant see
 			m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
+			var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x-100;
+			var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
+			
+			m_colorCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox",container.getNextHighestDepth(), {_x:x, _y:y});
+			m_colorCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
+			m_colorCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
+			m_colorCheckbox.addEventListener("click", this, "CheckboxChanged");
+			m_colorCheckbox.selected = OwnedOnly;
+			
+			var TxtField:TextField 	= container.createTextField("m_ownedColor", container.getNextHighestDepth(), x, label._y, label._width, label._height);
+			TxtField.autoSize = "left";
+			TxtField.setNewTextFormat(format);
+			TxtField.setTextFormat(format)
+			TxtField.embedFonts = true;
+			TxtField.text = "Unowned Colours:"
+			TxtField._x -= TxtField._width;
+			
 
 			m_DressingRoom.m_LeftPanel.m_Background.onPress = Delegate.create(this, MoveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onRelease = Delegate.create(this, SaveLeft);
@@ -188,5 +252,9 @@ class com.fox.DRTweaks.Mod {
 		}else{
 			Key.removeListener(keyListener);
 		}
+	}
+	
+	private function CheckboxChanged(event){
+		OwnedOnly = m_colorCheckbox.selected;
 	}
 }
