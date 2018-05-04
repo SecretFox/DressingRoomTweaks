@@ -313,7 +313,7 @@ class com.fox.DRTweaks.Mod {
 		else if (oldFocus._parent._name == "m_ColorPicker" && !newFocus ){
 			setTimeout(Delegate.create(this, FocusCall), 25);
 		}
-		else if (newFocus._name == "m_ownedColorCheckbox" || newFocus._name == "m_UnownedCheckBox"){
+		else if (newFocus._name == "m_ownedColorCheckbox" || newFocus._name == "m_UnownedCheckBox" || newFocus._name == "thumb" || newFocus._name == "track"){
 			setTimeout(Delegate.create(this, FocusCall), 50);
 		}
 	}
