@@ -16,8 +16,9 @@ When disabled Left/Right arrow keys will skip unowned colors.
 If there are no available colors then clothing won't be previewed.
   
 **Known Issues**  
-* When switching from chat back to dressing room, user has to click on checkbox/scrollbar/searchfield for keybinds to work again.  
-* When switching from searchbar to chat input, user has to double click to start typing.
+* When switching from chat back to dressing room, user has to click on checkbox/scrollbar/searchfield for the added keybinds to work again.  
+* When switching from searchbar to chat input, user has to double click chat before they can start typing.
+* Im not sure i can put player into combat stance, and the scrollbar steals focus so the normal keybind wont work. So at least currently player has to open dressing room with weapon already out.
 
 [![alt text](https://i.imgur.com/812P61A.png "Download")](https://github.com/SecretFox/DressingRoomTweaks/releases)  
 Install: unzip to `SWL\Data\Gui\Custom\Flash`
