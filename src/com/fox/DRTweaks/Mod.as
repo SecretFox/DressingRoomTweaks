@@ -19,6 +19,7 @@ class com.fox.DRTweaks.Mod {
 	private var DressingRoomLeftY:DistributedValue;
 	private var DressingRoomRightX:DistributedValue;
 	private var DressingRoomRightY:DistributedValue;
+	private var DRTweaks_keyboard:DistributedValue;
 	private var m_DressingRoom:MovieClip;
 	private var keyListener:Object;
 	private var focusListener:Object;
@@ -35,11 +36,11 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomRightX = DistributedValue.Create("DressingRoomRightX");
 		DressingRoomRightY = DistributedValue.Create("DressingRoomRightY");
 		DressingRoomDval = DistributedValue.Create("dressingRoom_window");
+		DRTweaks_keyboard = DistributedValue.Create("DRTweaks_keyboard");
 		focusListener = new Object();
 		focusListener.onSetFocus = Delegate.create(this, FocusChanged);
 	}
 	public function Load() {
-
 		DressingRoomDval.SignalChanged.Connect(HookLayout, this);
 	}
 	public function Unload() {
@@ -52,6 +53,8 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomLeftY.SetValue(config.FindEntry("DressingRoomLeftY", undefined));
 		DressingRoomRightX.SetValue(config.FindEntry("DressingRoomRightX", undefined));
 		DressingRoomRightY.SetValue(config.FindEntry("DressingRoomRightY", undefined));
+		DRTweaks_keyboard.SetValue(config.FindEntry("DRTweaks_keyboard", true));
+		
 		OwnedOnly = Boolean(config.FindEntry("OwnedOnly", true));
 		
 		HookLayout(DressingRoomDval);
@@ -62,6 +65,7 @@ class com.fox.DRTweaks.Mod {
 		config.AddEntry("DressingRoomLeftY",DressingRoomLeftY.GetValue());
 		config.AddEntry("DressingRoomRightX",DressingRoomRightX.GetValue());
 		config.AddEntry("DressingRoomRightY", DressingRoomRightY.GetValue());
+		config.AddEntry("DRTweaks_keyboard", DRTweaks_keyboard.GetValue());
 		config.AddEntry("OwnedOnly",OwnedOnly);
 		return config
 	}
@@ -211,10 +215,6 @@ class com.fox.DRTweaks.Mod {
 				})
 			}
 		}
-		//ESC
-		else if (Keycode == 27){
-			DressingRoomDval.SetValue(false);
-		}
 		//backspace
 		else if (Keycode == 8){
 			m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
@@ -228,8 +228,8 @@ class com.fox.DRTweaks.Mod {
 		else if (Keycode == 86){
 			CharacterBase.ToggleVanityMode(true);
 		}
-		// Close window
-		else if (Keycode == 87 || Keycode == 83 || Keycode == 65 || Keycode == 68){
+		// ESC,W,S,A,D Close window
+		else if (Keycode == 27 || Keycode == 87 || Keycode == 83 || Keycode == 65 || Keycode == 68){
 			m_DressingRoom.m_RightPanel["ClearStickyPreview"]();
 			m_DressingRoom.m_RightPanel["ClearPreview"]();
 			DressingRoomDval.SetValue(false);
@@ -243,6 +243,7 @@ class com.fox.DRTweaks.Mod {
 				setTimeout(Delegate.create(this, HookLayout), 50, dv);
 				return
 			}
+			// it should be enough to just position them when opened, but hooking the layout function ensures they always stays in the right position.
 			if (!m_DressingRoom._Layout){
 				m_DressingRoom._Layout = m_DressingRoom.Layout;
 				m_DressingRoom.Layout = function(){
@@ -255,32 +256,21 @@ class com.fox.DRTweaks.Mod {
 				}
 			}
 			m_DressingRoom.Layout();
-			var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
-			var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
-			var format = label.getTextFormat();
-			// cant click what you cant see
-			m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
-			var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x-100;
-			var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
 			
-			m_colorCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox",container.getNextHighestDepth(), {_x:x, _y:y});
-			m_colorCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
-			m_colorCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
-			m_colorCheckbox.addEventListener("click", this, "CheckboxChanged");
-			m_colorCheckbox.selected = OwnedOnly;
+			// In case of resolution change
+			var newPos:Point = Common.getOnScreen(m_DressingRoom.m_LeftPanel);
+			m_DressingRoom.m_LeftPanel._x = newPos.x;
+			m_DressingRoom.m_LeftPanel._y = newPos.y;
+			DressingRoomLeftX.SetValue(newPos.x);
+			DressingRoomLeftY.SetValue(newPos.y);
 			
-			var TxtField:TextField 	= container.createTextField("m_ownedColor", container.getNextHighestDepth(), x, label._y, label._width, label._height);
-			TxtField.autoSize = "left";
-			TxtField.setNewTextFormat(format);
-			TxtField.setTextFormat(format)
-			TxtField.embedFonts = true;
-			TxtField.text = "Unowned Colours:"
-			TxtField._x -= TxtField._width;
-
-			Selection.addListener(focusListener);
-			Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
-			m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "TabChanged");
+			newPos = Common.getOnScreen(m_DressingRoom.m_RightPanel);
+			m_DressingRoom.m_RightPanel._x = newPos.x;
+			m_DressingRoom.m_RightPanel._y = newPos.y;
+			DressingRoomRightX.SetValue(newPos.x);
+			DressingRoomRightY.SetValue(newPos.y);
 			
+			// Drag&Save
 			m_DressingRoom.m_LeftPanel.m_Background.onPress = Delegate.create(this, MoveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onRelease = Delegate.create(this, SaveLeft);
 			m_DressingRoom.m_LeftPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveLeft);
@@ -288,6 +278,36 @@ class com.fox.DRTweaks.Mod {
 			m_DressingRoom.m_RightPanel.m_Background.onPress = Delegate.create(this, MoveRight);
 			m_DressingRoom.m_RightPanel.m_Background.onRelease = Delegate.create(this, SaveRight);
 			m_DressingRoom.m_RightPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveRight)
+			// cant click what you cant see, makes it easier to drag the left panel.
+			m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
+			// Key listener and color checkbox
+			if(DRTweaks_keyboard.GetValue()){
+				var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
+				var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
+				var format = label.getTextFormat();
+
+				var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x-100;
+				var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
+				
+				m_colorCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox",container.getNextHighestDepth(), {_x:x, _y:y});
+				m_colorCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
+				m_colorCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
+				m_colorCheckbox.addEventListener("click", this, "CheckboxChanged");
+				m_colorCheckbox.selected = OwnedOnly;
+				
+				var TxtField:TextField 	= container.createTextField("m_ownedColor", container.getNextHighestDepth(), x, label._y, label._width, label._height);
+				TxtField.autoSize = "left";
+				TxtField.setNewTextFormat(format);
+				TxtField.setTextFormat(format)
+				TxtField.embedFonts = true;
+				TxtField.text = "Unowned Colours:"
+				TxtField._x -= TxtField._width;
+				
+				// these make sure that the scrollbar is set to focus when needed.
+				Selection.addListener(focusListener);
+				Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
+				m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "TabChanged");
+			}
 		}else{
 			Key.removeListener(keyListener);
 			Selection.removeListener(focusListener);
@@ -298,6 +318,7 @@ class com.fox.DRTweaks.Mod {
 	}
 	// hacky af
 	// should set the scrollbar active when player finishes searching, or clicks item/color/Checkbox
+	// Unfortunately chatbox isn't flash element,which causes minor issues.
 	private function FocusChanged(oldFocus:MovieClip, newFocus:MovieClip){
 		//com.GameInterface.UtilsBase.PrintChatText("1 :" + string(oldFocus._name) + " " + newFocus._name);
 		//com.GameInterface.UtilsBase.PrintChatText("2 :" + string(oldFocus._parent) + " " + newFocus._parent);
@@ -305,16 +326,16 @@ class com.fox.DRTweaks.Mod {
 		Key.removeListener(keyListener);
 		if (newFocus._name == "m_SearchText") return;
 		if (oldFocus._name == "m_SearchText"){
-			setTimeout(Delegate.create(this, FocusCall), 25);
+			setTimeout(Delegate.create(this, FocusCall), 5);
 		}
 		else if (newFocus._name == "_scrollBar"){
 			Key.addListener(keyListener);
 		}
 		else if (oldFocus._parent._name == "m_ColorPicker" && !newFocus ){
-			setTimeout(Delegate.create(this, FocusCall), 25);
+			setTimeout(Delegate.create(this, FocusCall), 5);
 		}
 		else if (newFocus._name == "m_ownedColorCheckbox" || newFocus._name == "m_UnownedCheckBox" || newFocus._name == "thumb" || newFocus._name == "track"){
-			setTimeout(Delegate.create(this, FocusCall), 50);
+			setTimeout(Delegate.create(this, FocusCall), 5);
 		}
 	}
 	private function CheckboxChanged(event){

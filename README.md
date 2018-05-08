@@ -13,7 +13,9 @@ Lets you move left/right dressing room panels, panels must be dragged from the b
    
 **Unowned Colors Checkbox**  
 When disabled Left/Right arrow keys will skip unowned colors.  
-If there are no available colors then clothing won't be previewed.
+If there are no available colors then clothing won't be previewed.  
+
+Keyboard control can be disabled with `/option DRTweaks_keyboard false` chat command.
   
 **Known Issues**  
 * When switching from chat back to dressing room, user has to click on checkbox/scrollbar/searchfield for the added keybinds to work again.  
