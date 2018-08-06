@@ -109,10 +109,7 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomRightX.SetValue(pos.x);
 		DressingRoomRightY.SetValue(pos.y);
 	}
-	private function KeyPressedBuffer(){
-		clearTimeout(KeyPresstimeOut);
-		KeyPresstimeOut = setTimeout(Delegate.create(this, KeyPressed), 100, Key.getCode(),Key.isDown(Key.CONTROL));
-	}
+
 	private function FindNextOwned(Entries:Array, direction, idx){
 		var retVal:Number = idx;
 		if (direction > 0){
@@ -131,7 +128,97 @@ class com.fox.DRTweaks.Mod {
 		return undefined
 	}
 	
+	private function inArray(id:Number, array:Array){
+		for (var i in array) if (array[i] == id) return i;
+	}
+
+	// Tint
+	private function PopulateCategoryList(idx:Boolean){
+		m_DressingRoom.m_LeftPanel.m_CategoryList.removeEventListener("change", this, "OnItemSelected");
+		var filteredArray:Array = m_DressingRoom.m_LeftPanel.FilterCategoryArray(m_DressingRoom.m_LeftPanel.m_CategoryArray);
+		filteredArray.sort(m_DressingRoom.m_LeftPanel.nodeCompare);
+		
+		var DelList:Array = new Array();
+		var FavList:Array = new Array();
+		var SpliceList:Array = new Array();
+		for (var i = 0; i < filteredArray.length;i++ ){
+			if (inArray(filteredArray[i].m_NodeId, Favorites) != undefined){
+				var entry = filteredArray[i]
+				SpliceList.push(i);
+				FavList.push(entry);
+				
+			}
+			else if (inArray(filteredArray[i].m_NodeId, Trash) != undefined){
+				var entry = filteredArray[i]
+				SpliceList.push(i);
+				DelList.push(entry);
+			}
+		}
+		for (var i in SpliceList){
+			filteredArray.splice(SpliceList[i],1);
+		}
+		filteredArray = FavList.concat(filteredArray);
+		if (ShowTrash){
+			filteredArray = filteredArray.concat(DelList);
+		}
+		
+		m_DressingRoom.m_LeftPanel.m_CategoryList.dataProvider = filteredArray;
+		m_DressingRoom.m_LeftPanel.m_CategoryList.invalidateData();
+		m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("change", m_DressingRoom.m_LeftPanel, "OnCategorySelected");
+		//scrolls to start unless user just presses trash/fav button
+		if(idx == undefined) m_DressingRoom.m_LeftPanel.m_CategoryList.selectedIndex = 0;
+		m_DressingRoom.m_LeftPanel.OnCategorySelected();
+		m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("itemPress", this, "ItemPressed");
+		setIcons();
+		//sets preview if user had clicked on trash/fav
+		if (idx != undefined){
+			KeyPressed(40);
+		}
+	}
 	
+	private function ItemPressed(clip:MovieClip){
+		var clicked;
+		//Favorite and remove from trash
+		if (clip.renderer.fav.hitTest(_root._xmouse, _root._ymouse)){
+			var found = inArray(clip.renderer.data.m_NodeId, Favorites);
+			//already favorited,remove from favorites
+			if (found != undefined){
+				Favorites.splice(found,1);
+			}
+			//add to favorites
+			else{
+				Favorites.push(clip.renderer.data.m_NodeId);
+				//remove from trash
+				found = inArray(clip.renderer.data.m_NodeId, Trash);
+				if (found != undefined) Trash.splice(found,1);
+			}
+			clicked = "fav";
+		}
+		//Trash and remove from favorites
+		if (clip.renderer.trash.hitTest(_root._xmouse, _root._ymouse)){
+			var found = inArray(clip.renderer.data.m_NodeId, Trash);
+			if (found != undefined){
+				Trash.splice(found, 1);
+			}
+			else{
+				Trash.push(clip.renderer.data.m_NodeId);
+				found = inArray(clip.renderer.data.m_NodeId, Favorites);
+				if (found != undefined) Favorites.splice(found,1);
+			}
+			clicked = "trash";
+		}
+		//redraw
+		if (clicked){
+			PopulateCategoryList(true);
+		}else{
+			setTimeout(Delegate.create(this, KeyPressed), 200, 40);
+		}
+	}
+	private function KeyPressedBuffer(){
+		clearTimeout(KeyPresstimeOut);
+		//setTimeout appears to make character less naked when scrolling fast
+		KeyPresstimeOut = setTimeout(Delegate.create(this, KeyPressed), 100, Key.getCode(),Key.isDown(Key.CONTROL));
+	}
 	private function KeyPressed(Keycode, Control){
 		if (Control && (Keycode == 40 || Keycode == 38)){
 			var idx = 0;
@@ -159,7 +246,7 @@ class com.fox.DRTweaks.Mod {
 		if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 0){
 			Modevariable = "m_ColorPicker"
 			ListVariable = "m_ColorTileList"
-		}else if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 1 || m_DressingRoom.m_RightPanel["m_CurrentMode"] == 28101 || m_DressingRoom.m_RightPanel["m_CurrentMode"] == 102){
+		}else if (m_DressingRoom.m_RightPanel["m_CurrentMode"] == 1 || m_DressingRoom.m_RightPanel["m_CurrentMode"] == m_DressingRoom.m_RightPanel.WEAPON_SKINS || m_DressingRoom.m_RightPanel["m_CurrentMode"] == m_DressingRoom.m_RightPanel.BUNDLES){
 			Modevariable = "m_ItemSelector"
 			ListVariable = "m_ItemList"
 		}
@@ -257,93 +344,11 @@ class com.fox.DRTweaks.Mod {
 		else if (Keycode == 46){
 			
 		}
-		else UtilsBase.PrintChatText(string(Keycode));
 		*/
 	}
-	private function inArray(id:Number, array:Array){
-		for (var i in array) if (array[i] == id) return i;
-	}
-
-	// Tint
-	private function PopulateCategoryList(idx:Boolean){
-		m_DressingRoom.m_LeftPanel.m_CategoryList.removeEventListener("change", this, "OnItemSelected");
-		var filteredArray:Array = m_DressingRoom.m_LeftPanel.FilterCategoryArray(m_DressingRoom.m_LeftPanel.m_CategoryArray);
-		filteredArray.sort(m_DressingRoom.m_LeftPanel.nodeCompare);
-		var DelList:Array = new Array();
-		var FavList:Array = new Array();
-		var SpliceList:Array = new Array();
-		for (var i = 0; i < filteredArray.length;i++ ){
-			if (inArray(filteredArray[i].m_NodeId, Favorites) != undefined){
-				var entry = filteredArray[i]
-				SpliceList.push(i);
-				FavList.push(entry);
-				
-			}
-			else if (inArray(filteredArray[i].m_NodeId, Trash) != undefined){
-				var entry = filteredArray[i]
-				SpliceList.push(i);
-				DelList.push(entry);
-			}
-		}
-		for (var i in SpliceList){
-			filteredArray.splice(SpliceList[i],1);
-		}
-		filteredArray = FavList.concat(filteredArray);
-		if (ShowTrash){
-			filteredArray = filteredArray.concat(DelList);
-		}
-		
-		m_DressingRoom.m_LeftPanel.m_CategoryList.dataProvider = filteredArray;
-		m_DressingRoom.m_LeftPanel.m_CategoryList.invalidateData();
-		m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("change", m_DressingRoom.m_LeftPanel, "OnCategorySelected");
-		if(!idx) m_DressingRoom.m_LeftPanel.m_CategoryList.selectedIndex = 0;
-		m_DressingRoom.m_LeftPanel.OnCategorySelected();
-		m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("itemPress", this, "ItemPressed");
-		setIcons();
-	}
 	
-	private function ItemPressed(clip:MovieClip){
-		var clicked;
-		//Favorite and remove from trash
-		if (clip.renderer.fav.hitTest(_root._xmouse, _root._ymouse)){
-			var found = inArray(clip.renderer.data.m_NodeId, Favorites);
-			//already favorited,remove from favorites
-			if (found != undefined){
-				Favorites.splice(found,1);
-			}
-			//add to favorites
-			else{
-				Favorites.push(clip.renderer.data.m_NodeId);
-				//remove from trash
-				found = inArray(clip.renderer.data.m_NodeId, Trash);
-				if (found != undefined) Trash.splice(found);
-			}
-			clicked = true;
-		}
-		//Trash and remove from favorites
-		if (clip.renderer.trash.hitTest(_root._xmouse, _root._ymouse)){
-			var found = inArray(clip.renderer.data.m_NodeId, Trash);
-			if (found != undefined){
-				Trash.splice(found, 1);
-			}
-			else{
-				Trash.push(clip.renderer.data.m_NodeId);
-				found = inArray(clip.renderer.data.m_NodeId, Favorites);
-				if (found != undefined) Favorites.splice(found);
-			}
-			clicked = true;
-		}
-		//redraw
-		
-		if (clicked){
-			PopulateCategoryList(true);
-			setTimeout(Delegate.create(this,KeyPressed), 500, 40, Key.isDown(Key.CONTROL));
-		}else setTimeout(Delegate.create(this,KeyPressed), 500, 40, Key.isDown(Key.CONTROL));
-		//preview
-		//set list back to focus for keyboard control
-		FocusCall();
-	}
-	
+	// TODO This should be done for the visible renderers
+	// Draws the icons
 	private function setIcons(){
 		for (var i in _root.dressingroom.m_LeftPanel.m_CategoryList.renderers){
 			var renderer = _root.dressingroom.m_LeftPanel.m_CategoryList.renderers[i];
@@ -377,11 +382,16 @@ class com.fox.DRTweaks.Mod {
 					if (DistributedValueBase.GetDValue("DressingRoomRightX")) this.m_RightPanel._x = DistributedValueBase.GetDValue("DressingRoomRightX");
 					if (DistributedValueBase.GetDValue("DressingRoomRightY")) this.m_RightPanel._y = DistributedValueBase.GetDValue("DressingRoomRightY");
 				}
+				m_DressingRoom.Layout();
 			}
+			//creates the list, with fav -> unordered -> trash order
 			if (!m_DressingRoom.m_LeftPanel._PopulateCategoryList){
 				m_DressingRoom.m_LeftPanel._PopulateCategoryList = m_DressingRoom.m_LeftPanel.PopulateCategoryList;
 				m_DressingRoom.m_LeftPanel.PopulateCategoryList = Delegate.create(this, PopulateCategoryList);
 			}
+			m_DressingRoom.m_LeftPanel.RemoveFocus = undefined;
+			
+			// Trash/Fav button creation
 			if (!_global.com.fox.DRTweaks.Hooked){
 				_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.onLoadComplete = function(target:MovieClip){
 					if (target._name == "trash"){
@@ -410,7 +420,6 @@ class com.fox.DRTweaks.Mod {
 						mcLoader.loadClip(path, container);
 						mcLoader.loadClip(path2, container2);
 					}
-
 				}
 				f.base = _global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData;
 				_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData = f;
@@ -421,9 +430,7 @@ class com.fox.DRTweaks.Mod {
 				_global.com.fox.DRTweaks.Hooked = true;
 			}
 			
-			m_DressingRoom.Layout();
-			
-			// In case of resolution change
+			// Repostions panels on screen, in case of resolution change
 			var newPos:Point = Common.getOnScreen(m_DressingRoom.m_LeftPanel);
 			m_DressingRoom.m_LeftPanel._x = newPos.x;
 			m_DressingRoom.m_LeftPanel._y = newPos.y;
@@ -443,18 +450,36 @@ class com.fox.DRTweaks.Mod {
 			
 			m_DressingRoom.m_RightPanel.m_Background.onPress = Delegate.create(this, MoveRight);
 			m_DressingRoom.m_RightPanel.m_Background.onRelease = Delegate.create(this, SaveRight);
-			m_DressingRoom.m_RightPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveRight)
+			m_DressingRoom.m_RightPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveRight);
+			
 			// cant click what you cant see, makes it easier to drag the left panel.
 			m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
 			PopulateCategoryList();
+			
+			//positioning
+			var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
+			var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x - 100;
+			var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
+			var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
+			var format = label.getTextFormat();
+			
+			//hide trash checkbox
+			m_trashCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_TrashBox", container.getNextHighestDepth(), {_x:x+100, _y:m_DressingRoom.m_LeftPanel.m_Background._y-10 + m_DressingRoom.m_LeftPanel.m_Background._height });
+			m_trashCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
+			m_trashCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
+			m_trashCheckbox.addEventListener("click", this, "TrashChanged");
+			m_trashCheckbox.selected = ShowTrash;
+			// label
+			var trashField:TextField = container.createTextField("m_TrashField", container.getNextHighestDepth(), x+100, m_DressingRoom.m_LeftPanel.m_Background._y + m_DressingRoom.m_LeftPanel.m_Background._height-5, label._width, label._height);
+			trashField.autoSize = "left";
+			trashField.setNewTextFormat(format);
+			trashField.setTextFormat(format);
+			trashField.embedFonts = true;
+			trashField.text = "Show hidden:";
+			trashField._x -= trashField._width;
+			
 			// Key listener and color checkbox
 			if(DRTweaks_keyboard.GetValue()){
-				var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
-				var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
-				var format = label.getTextFormat();
-
-				var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x - 100;
-				var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
 				//Color Checkbox
 				m_colorCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox",container.getNextHighestDepth(), {_x:x, _y:y});
 				m_colorCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
@@ -469,26 +494,11 @@ class com.fox.DRTweaks.Mod {
 				TxtField.embedFonts = true;
 				TxtField.text = "Unowned Colours:"
 				TxtField._x -= TxtField._width;
-				//Trash Checkbox
-				m_trashCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox", container.getNextHighestDepth(), {_x:x+100, _y:m_DressingRoom.m_LeftPanel.m_Background._y-10 + m_DressingRoom.m_LeftPanel.m_Background._height });
-				m_trashCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
-				m_trashCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
-				m_trashCheckbox.addEventListener("click", this, "TrashChanged");
-				m_trashCheckbox.selected = ShowTrash;
-				
-				var trashField:TextField = container.createTextField("m_ownedColor", container.getNextHighestDepth(), x+100, m_DressingRoom.m_LeftPanel.m_Background._y + m_DressingRoom.m_LeftPanel.m_Background._height-5, label._width, label._height);
-				trashField.autoSize = "left";
-				trashField.setNewTextFormat(format);
-				trashField.setTextFormat(format)
-				trashField.embedFonts = true;
-				trashField.text = "Show hidden:"
-				trashField._x -= trashField._width;
-				
-				m_DressingRoom.m_LeftPanel.m_Background._height +=20;
+				m_DressingRoom.m_LeftPanel.m_Background._height += 20;
 				
 				// these make sure that the scrollbar is set to focus when needed.
 				Selection.addListener(focusListener);
-				Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
+				Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList);
 				m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "TabChanged");
 			}
 		}else{
@@ -496,29 +506,41 @@ class com.fox.DRTweaks.Mod {
 			Selection.removeListener(focusListener);
 		}
 	}
-	private function FocusCall(){
-		Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
+	
+	private function SetFocus(){
+		Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList);
+	}
+	
+
+	private function GetFullPath(clip:MovieClip){
+		var FullPath:Array = new Array(clip._name);
+		var parentClip:MovieClip = clip;
+		while (parentClip != undefined){
+			parentClip = parentClip._parent;
+			if(parentClip) FullPath.push(parentClip._name)
+		}
+		FullPath.reverse();
+		return FullPath.join(".");
 	}
 	// hacky af
-	// should set the scrollbar active when player finishes searching, or clicks item/color/Checkbox
-	// Unfortunately chatbox isn't flash element,which causes minor issues.
+	// should set the m_CategoryList active when player finishes searching, or clicks any left/right panel component
 	private function FocusChanged(oldFocus:MovieClip, newFocus:MovieClip){
-		//com.GameInterface.UtilsBase.PrintChatText("1 :" + string(oldFocus._name) + " " + newFocus._name);
-		//com.GameInterface.UtilsBase.PrintChatText("2 :" + string(oldFocus._parent) + " " + newFocus._parent);
-		//com.GameInterface.UtilsBase.PrintChatText("3 :"+string(oldFocus._parent._name) + " " + newFocus._parent._name);
 		Key.removeListener(keyListener);
 		if (newFocus._name == "m_SearchText") return;
 		if (oldFocus._name == "m_SearchText"){
-			setTimeout(Delegate.create(this, FocusCall), 5);
+			setTimeout(Delegate.create(this, SetFocus), 5);
+			return
 		}
-		else if (newFocus._name == "_scrollBar"){
+		if (newFocus._name == "m_CategoryList"){
 			Key.addListener(keyListener);
+			return
 		}
-		else if (oldFocus._parent._name == "m_ColorPicker" && !newFocus ){
-			setTimeout(Delegate.create(this, FocusCall), 5);
-		}
-		else if (newFocus._name == "m_ownedColorCheckbox" || newFocus._name == "m_UnownedCheckBox" || newFocus._name == "thumb" || newFocus._name == "track"){
-			setTimeout(Delegate.create(this, FocusCall), 5);
+
+		var Fullpath = GetFullPath(newFocus);
+		if (!Fullpath) return;
+		if (Fullpath.indexOf("m_RightPanel") > 0 || Fullpath.indexOf("m_LeftPanel")){
+			//UtilsBase.PrintChatText("contains "+Fullpath)
+			setTimeout(Delegate.create(this, SetFocus), 5);
 		}
 	}
 	private function OwnedChanged(event){
