@@ -166,17 +166,18 @@ class com.fox.DRTweaks.Mod {
 		m_DressingRoom.m_LeftPanel.m_CategoryList.invalidateData();
 		m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("change", m_DressingRoom.m_LeftPanel, "OnCategorySelected");
 		//scrolls to start unless user just presses trash/fav button
-		if(idx == undefined) m_DressingRoom.m_LeftPanel.m_CategoryList.selectedIndex = 0;
+		if(!idx) m_DressingRoom.m_LeftPanel.m_CategoryList.selectedIndex = 0;
 		m_DressingRoom.m_LeftPanel.OnCategorySelected();
 		m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("itemPress", this, "ItemPressed");
 		setIcons();
 		//sets preview if user had clicked on trash/fav
-		if (idx != undefined){
+		if (idx){
 			KeyPressed(40);
 		}
 	}
 	
 	private function ItemPressed(clip:MovieClip){
+		//com.GameInterface.UtilsBase.PrintChatText("Item press");
 		var clicked;
 		//Favorite and remove from trash
 		if (clip.renderer.fav.hitTest(_root._xmouse, _root._ymouse)){
@@ -212,6 +213,7 @@ class com.fox.DRTweaks.Mod {
 			PopulateCategoryList(true);
 		}else{
 			setTimeout(Delegate.create(this, KeyPressed), 200, 40);
+			SetFocus();
 		}
 	}
 	private function KeyPressedBuffer(){
