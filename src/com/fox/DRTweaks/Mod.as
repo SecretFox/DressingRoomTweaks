@@ -395,16 +395,16 @@ class com.fox.DRTweaks.Mod {
 			if (!_global.com.fox.DRTweaks.Hooked){
 				_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.onLoadComplete = function(target:MovieClip){
 					if (target._name == "trash"){
-						target._xscale = 30;
-						target._yscale = 30;
+						target._width = 12;
+						target._height = 16;
 						target._x = this.m_Owned._x -this.m_Owned._width * 2 - 10;
 						target._y = this.m_Owned._y;
 					}
 					else{
-						target._xscale = 30;
-						target._yscale = 30;
+						target._width = 18;
+						target._height = 18;
 						target._x = this.m_Owned._x -this.m_Owned._width - 10;
-						target._y = this.m_Owned._y-2;
+						target._y = this.m_Owned._y;
 					}
 				}
 				var f:Function = function(data:DressingRoomNode) {
@@ -538,8 +538,8 @@ class com.fox.DRTweaks.Mod {
 
 		var Fullpath = GetFullPath(newFocus);
 		if (!Fullpath) return;
-		if (Fullpath.indexOf("m_RightPanel") > 0 || Fullpath.indexOf("m_LeftPanel")){
-			//UtilsBase.PrintChatText("contains "+Fullpath)
+		if (Fullpath.indexOf("m_RightPanel") > 0 || Fullpath.indexOf("m_LeftPanel") > 0){
+			//com.GameInterface.UtilsBase.PrintChatText("contains "+Fullpath)
 			setTimeout(Delegate.create(this, SetFocus), 5);
 		}
 	}
