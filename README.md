@@ -1,8 +1,9 @@
 # DressingRoomTweaks  
 **Features**  
 * Lets you move left/right dressing room panels, panels must be dragged from the background(not title).  
-* Adds Keybinds for browsing the dressing room  
-* Adds Favorite and Trash buttons.  
+* Adds Keybinds for browsing the dressing room  (can be disabled)
+* Adds Favorite and Trash buttons. 
+* Disables idle animations while in dressing room (can be disabled)
 
 **About: Keybinds**  
 * Up/Down to scroll through clothes.  
@@ -20,8 +21,10 @@
 **About: Unowned Colors Checkbox**  
 When disabled Left/Right arrow keys will skip unowned colors.  
 If there are no available colors then clothing won't be previewed.  
+Keybinds can be disabled with `/option DRTweaks_keyboard false` chat command.  
 
-Keybinds can be disabled with `/option DRTweaks_keyboard false` chat command.
+**About: Idle animations**  
+By default DRTweaks will disalbe idle animations while dressing room is open,this behaviour can be changed with `/option DRTweaks_DisableIdleAnimations` chat command.  
   
 **Known Issues**  
 * Combat stance can't be changed while dressing room is active

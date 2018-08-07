@@ -6,6 +6,7 @@ import com.GameInterface.DistributedValue;
 import com.GameInterface.DistributedValueBase;
 import com.GameInterface.DressingRoom;
 import com.GameInterface.DressingRoomNode;
+import com.GameInterface.Game.Character;
 import com.GameInterface.Game.CharacterBase;
 import com.Utils.Archive;
 import com.Utils.Colors;
@@ -22,6 +23,7 @@ class com.fox.DRTweaks.Mod {
 	private var DressingRoomRightX:DistributedValue;
 	private var DressingRoomRightY:DistributedValue;
 	private var DRTweaks_keyboard:DistributedValue;
+	private var DRTweaks_DisableIdleAnimations:DistributedValue;
 	private var m_DressingRoom:MovieClip;
 	private var keyListener:Object;
 	private var focusListener:Object;
@@ -44,6 +46,7 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomRightY = DistributedValue.Create("DressingRoomRightY");
 		DressingRoomDval = DistributedValue.Create("dressingRoom_window");
 		DRTweaks_keyboard = DistributedValue.Create("DRTweaks_keyboard");
+		DRTweaks_DisableIdleAnimations = DistributedValue.Create("DRTweaks_DisableIdleAnimations");
 		focusListener = new Object();
 		focusListener.onSetFocus = Delegate.create(this, FocusChanged);
 	}
@@ -61,6 +64,7 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomRightX.SetValue(config.FindEntry("DressingRoomRightX", undefined));
 		DressingRoomRightY.SetValue(config.FindEntry("DressingRoomRightY", undefined));
 		DRTweaks_keyboard.SetValue(config.FindEntry("DRTweaks_keyboard", true));
+		DRTweaks_DisableIdleAnimations.SetValue(config.FindEntry("DRTweaks_DisableIdleAnimations", true));
 		OwnedOnly = Boolean(config.FindEntry("OwnedOnly", true));
 		ShowTrash = Boolean(config.FindEntry("TrashHidden", false));
 		Favorites = config.FindEntryArray("Favorites");
@@ -77,6 +81,7 @@ class com.fox.DRTweaks.Mod {
 		config.AddEntry("DressingRoomRightX",DressingRoomRightX.GetValue());
 		config.AddEntry("DressingRoomRightY", DressingRoomRightY.GetValue());
 		config.AddEntry("DRTweaks_keyboard", DRTweaks_keyboard.GetValue());
+		config.AddEntry("DRTweaks_DisableIdleAnimations", DRTweaks_DisableIdleAnimations.GetValue());
 		config.AddEntry("OwnedOnly", OwnedOnly);
 		config.AddEntry("TrashHidden", ShowTrash);
 		for (var i in Favorites){
@@ -501,12 +506,18 @@ class com.fox.DRTweaks.Mod {
 				// these make sure that the scrollbar is set to focus when needed.
 				Selection.addListener(focusListener);
 				Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList);
-				m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "TabChanged");
+				m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "SetFocus");
+				SetIdle();
 			}
 		}else{
 			Key.removeListener(keyListener);
 			Selection.removeListener(focusListener);
 		}
+	}
+	
+	//disables idle animations, appears to reset to original when player moves.
+	private function SetIdle(){
+		if (DRTweaks_DisableIdleAnimations.GetValue()) Character.GetClientCharacter().SetBaseAnim("normal_idle");
 	}
 	
 	private function SetFocus(){
@@ -551,8 +562,5 @@ class com.fox.DRTweaks.Mod {
 	private function TrashChanged(event){
 		ShowTrash = m_trashCheckbox.selected;
 		PopulateCategoryList();
-	}
-	private function TabChanged(){
-		Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar);
 	}
 }
