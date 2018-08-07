@@ -182,7 +182,6 @@ class com.fox.DRTweaks.Mod {
 	}
 	
 	private function ItemPressed(clip:MovieClip){
-		//com.GameInterface.UtilsBase.PrintChatText("Item press");
 		var clicked;
 		//Favorite and remove from trash
 		if (clip.renderer.fav.hitTest(_root._xmouse, _root._ymouse)){
@@ -418,8 +417,8 @@ class com.fox.DRTweaks.Mod {
 					arguments.callee.base.apply(this, arguments);
 					if (data && !this.trash){
 						var mcLoader:MovieClipLoader = new MovieClipLoader();
-						var container = this.createEmptyMovieClip("trash", 100);
-						var container2 = this.createEmptyMovieClip("fav", 101);
+						var container = this.createEmptyMovieClip("trash", this.getNextHighestDepth());
+						var container2 = this.createEmptyMovieClip("fav", this.getNextHighestDepth());
 						var path = "DRTweaks\\trash.png";
 						var path2 = "DRTweaks\\fav.png";
 						var resizer:Object = new Object();
@@ -515,7 +514,7 @@ class com.fox.DRTweaks.Mod {
 		}
 	}
 	
-	//disables idle animations, appears to reset to original when player moves.
+	//disables idle animations, Base Animation appears to reset when player moves, so no need to set it back.
 	private function SetIdle(){
 		if (DRTweaks_DisableIdleAnimations.GetValue()) Character.GetClientCharacter().SetBaseAnim("normal_idle");
 	}
