@@ -354,11 +354,11 @@ class com.fox.DRTweaks.Mod {
 		*/
 	}
 	
-	// TODO This should be done for the visible renderers
-	// Draws the icons
+	// Color Trash/Fav icons on scroll.
 	private function setIcons(){
-		for (var i in _root.dressingroom.m_LeftPanel.m_CategoryList.renderers){
-			var renderer = _root.dressingroom.m_LeftPanel.m_CategoryList.renderers[i];
+		for (var i in _root.dressingroom.m_LeftPanel.m_CategoryList.container){
+			var renderer = _root.dressingroom.m_LeftPanel.m_CategoryList.container[i];
+			if (renderer == _root.dressingroom.m_LeftPanel.m_CategoryList.container._scrollBar) continue;
 			Colors.ApplyColor(renderer.fav, 0x959595);
 			Colors.ApplyColor(renderer.trash, 0x959595);
 			var node:DressingRoomNode = renderer.data;
@@ -523,7 +523,6 @@ class com.fox.DRTweaks.Mod {
 	private function SetFocus(){
 		Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList);
 	}
-	
 
 	private function GetFullPath(clip:MovieClip){
 		var FullPath:Array = new Array(clip._name);
@@ -552,7 +551,7 @@ class com.fox.DRTweaks.Mod {
 		var Fullpath = GetFullPath(newFocus);
 		if (!Fullpath) return;
 		if (Fullpath.indexOf("m_RightPanel") > 0 || Fullpath.indexOf("m_LeftPanel") > 0){
-			//com.GameInterface.UtilsBase.PrintChatText("contains "+Fullpath)
+			Key.addListener(keyListener);
 			setTimeout(Delegate.create(this, SetFocus), 5);
 		}
 	}
