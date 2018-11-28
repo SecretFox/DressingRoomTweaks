@@ -14,6 +14,8 @@
 * Esc,W,S,A or D to exit dressing room.   
 * V to toggle vanity camera.  
 
+Keybinds can be disabled with `/option DRTweaks_keyboard false` chat command.  
+
 **About: Trash / Favorite**  
 * Favorited clothes will appear at the top of the list
 * Trashed clothes will appear at the bottom, if "Show Hidden" checkbox is disabled they will be completely hidden
@@ -21,7 +23,7 @@
 **About: Unowned Colors Checkbox**  
 When disabled Left/Right arrow keys will skip unowned colors.  
 If there are no available colors then clothing won't be previewed.  
-Keybinds can be disabled with `/option DRTweaks_keyboard false` chat command.  
+
 
 **About: Idle animations**  
 By default DRTweaks will disalbe idle animations while dressing room is open,this behaviour can be changed with `/option DRTweaks_DisableIdleAnimations` chat command.  
