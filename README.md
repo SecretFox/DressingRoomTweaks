@@ -1,3 +1,4 @@
+[![Downloads](https://img.shields.io/github/downloads/SecretFox/DressingRoomTweaks/total)](https://github.com/SecretFox/DressingRoomTweaks/releases)  
 # DressingRoomTweaks  
 **Features**  
 * Lets you move left/right dressing room panels, panels must be dragged from the background(not title).  
@@ -30,6 +31,6 @@ By default DRTweaks will disalbe idle animations while dressing room is open,thi
   
 **Known Issues**  
 * Combat stance can't be changed while dressing room is active
+* If you use chat while in the dressing room you will have to click one of the dressing room items to re-enable keybinds.
 
-[![alt text](https://i.imgur.com/812P61A.png "Download")](https://github.com/SecretFox/DressingRoomTweaks/releases)  
 Install: unzip to `SWL\Data\Gui\Custom\Flash`
