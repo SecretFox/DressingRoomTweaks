@@ -373,7 +373,7 @@ class com.fox.DRTweaks.Mod {
 	private function HookLayout(dv:DistributedValue){
 		if (dv.GetValue()){
 			m_DressingRoom = _root.dressingroom;
-			if (!m_DressingRoom.Layout || !m_DressingRoom.m_LeftPanel.m_Background || !m_DressingRoom.m_RightPanel.m_Background){
+			if (!m_DressingRoom["m_LeftPanel"]["initialized"] || !m_DressingRoom["m_RightPanel"]["initialized"]){
 				setTimeout(Delegate.create(this, HookLayout), 50, dv);
 				return
 			}
@@ -403,13 +403,15 @@ class com.fox.DRTweaks.Mod {
 					if (target._name == "trash"){
 						target._width = 12;
 						target._height = 16;
-						target._x = this.m_Owned._x -this.m_Owned._width * 2 - 10;
+						var xClip:MovieClip = this.m_PromoIcon || this.m_Owned;
+						target._x = xClip._x - 46;
 						target._y = this.m_Owned._y;
 					}
 					else{
 						target._width = 18;
 						target._height = 18;
-						target._x = this.m_Owned._x -this.m_Owned._width - 10;
+						var xClip:MovieClip = this.m_PromoIcon ||  this.m_Owned;
+						target._x = xClip._x - 28;
 						target._y = this.m_Owned._y;
 					}
 				}
@@ -425,6 +427,10 @@ class com.fox.DRTweaks.Mod {
 						mcLoader.addListener(this);
 						mcLoader.loadClip(path, container);
 						mcLoader.loadClip(path2, container2);
+					}
+					else{
+						this.onLoadComplete(this.trash);
+						this.onLoadComplete(this.fav);
 					}
 				}
 				f.base = _global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData;
