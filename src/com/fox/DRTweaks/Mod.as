@@ -15,8 +15,6 @@ import com.fox.Utils.Common;
 import mx.utils.Delegate;
 
 class com.fox.DRTweaks.Mod {
-
-	private var m_swfroot:MovieClip;
 	private var DressingRoomDval:DistributedValue;
 	private var DressingRoomLeftX:DistributedValue;
 	private var DressingRoomLeftY:DistributedValue;
@@ -37,7 +35,6 @@ class com.fox.DRTweaks.Mod {
 	private var Trash:Array;
 	
 	public function Mod(root) {
-		m_swfroot = root;
 		keyListener = new Object();
 		keyListener.onKeyDown = Delegate.create(this, KeyPressedBuffer);
 		DressingRoomLeftX = DistributedValue.Create("DressingRoomLeftX");
@@ -51,10 +48,8 @@ class com.fox.DRTweaks.Mod {
 		focusListener.onSetFocus = Delegate.create(this, FocusChanged);
 	}
 	public function Load() {
-		DressingRoomDval.SignalChanged.Connect(HookLayout, this);
 	}
 	public function Unload() {
-		DressingRoomDval.SignalChanged.Disconnect(HookLayout, this);
 		Key.removeListener(keyListener);
 		Selection.removeListener(focusListener);
 	}
@@ -72,7 +67,7 @@ class com.fox.DRTweaks.Mod {
 		Trash = config.FindEntryArray("Trash");
 		if (!Trash) Trash = new Array();
 		
-		HookLayout(DressingRoomDval);
+		HookLayout();
 	}
 	public function Deactivate():Archive {
 		var config:Archive = new Archive();
@@ -92,9 +87,11 @@ class com.fox.DRTweaks.Mod {
 		}
 		return config
 	}
+	
 	private function MoveLeft(){
 		m_DressingRoom.m_LeftPanel.startDrag();
 	}
+	
 	private function SaveLeft(){
 		m_DressingRoom.m_LeftPanel.stopDrag();
 		var pos:Point = Common.getOnScreen(m_DressingRoom.m_LeftPanel);
@@ -103,9 +100,11 @@ class com.fox.DRTweaks.Mod {
 		DressingRoomLeftX.SetValue(pos.x);
 		DressingRoomLeftY.SetValue(pos.y);
 	}
+	
 	private function MoveRight(){
 		m_DressingRoom.m_RightPanel.startDrag();
 	}
+	
 	private function SaveRight(){
 		m_DressingRoom.m_RightPanel.stopDrag();
 		var pos:Point = Common.getOnScreen(m_DressingRoom.m_RightPanel);
@@ -370,153 +369,148 @@ class com.fox.DRTweaks.Mod {
 		}
 	}
 	
-	private function HookLayout(dv:DistributedValue){
-		if (dv.GetValue()){
-			m_DressingRoom = _root.dressingroom;
-			if (!m_DressingRoom["m_LeftPanel"]["initialized"] || !m_DressingRoom["m_RightPanel"]["initialized"]){
-				setTimeout(Delegate.create(this, HookLayout), 50, dv);
-				return
+	private function HookLayout(){
+		m_DressingRoom = _root.dressingroom;
+		if (!m_DressingRoom["m_LeftPanel"]["initialized"] || !m_DressingRoom["m_RightPanel"]["initialized"]){
+			setTimeout(Delegate.create(this, HookLayout), 50);
+			return
+		}
+		// it should be enough to just position them when opened, but hooking the layout function ensures they always stays in the right position.
+		if (!m_DressingRoom._Layout){
+			m_DressingRoom._Layout = m_DressingRoom.Layout;
+			m_DressingRoom.Layout = function(){
+				//not needed,but calling it in-case funcom adds to it
+				this.m_DressingRoom._Layout();
+				if (DistributedValueBase.GetDValue("DressingRoomLeftX")) this.m_LeftPanel._x = 	DistributedValueBase.GetDValue("DressingRoomLeftX");
+				if (DistributedValueBase.GetDValue("DressingRoomLeftY")) this.m_LeftPanel._y = 	DistributedValueBase.GetDValue("DressingRoomLeftY");
+				if (DistributedValueBase.GetDValue("DressingRoomRightX")) this.m_RightPanel._x = DistributedValueBase.GetDValue("DressingRoomRightX");
+				if (DistributedValueBase.GetDValue("DressingRoomRightY")) this.m_RightPanel._y = DistributedValueBase.GetDValue("DressingRoomRightY");
 			}
-			// it should be enough to just position them when opened, but hooking the layout function ensures they always stays in the right position.
-			if (!m_DressingRoom._Layout){
-				m_DressingRoom._Layout = m_DressingRoom.Layout;
-				m_DressingRoom.Layout = function(){
-					//not needed,but calling it in-case funcom adds to it
-					this.m_DressingRoom._Layout();
-					if (DistributedValueBase.GetDValue("DressingRoomLeftX")) this.m_LeftPanel._x = 	DistributedValueBase.GetDValue("DressingRoomLeftX");
-					if (DistributedValueBase.GetDValue("DressingRoomLeftY")) this.m_LeftPanel._y = 	DistributedValueBase.GetDValue("DressingRoomLeftY");
-					if (DistributedValueBase.GetDValue("DressingRoomRightX")) this.m_RightPanel._x = DistributedValueBase.GetDValue("DressingRoomRightX");
-					if (DistributedValueBase.GetDValue("DressingRoomRightY")) this.m_RightPanel._y = DistributedValueBase.GetDValue("DressingRoomRightY");
+			m_DressingRoom.Layout();
+		}
+		//creates the list, with fav -> unordered -> trash order
+		if (!m_DressingRoom.m_LeftPanel._PopulateCategoryList){
+			m_DressingRoom.m_LeftPanel._PopulateCategoryList = m_DressingRoom.m_LeftPanel.PopulateCategoryList;
+			m_DressingRoom.m_LeftPanel.PopulateCategoryList = Delegate.create(this, PopulateCategoryList);
+		}
+		m_DressingRoom.m_LeftPanel.RemoveFocus = undefined;
+		
+		// Trash/Fav button creation
+		if (!_global.com.fox.DRTweaks.Hooked){
+			_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.onLoadComplete = function(target:MovieClip){
+				if (target._name == "trash"){
+					target._width = 12;
+					target._height = 16;
+					var xClip:MovieClip = this.m_PromoIcon || this.m_Owned;
+					target._x = xClip._x - 46;
+					target._y = this.m_Owned._y;
 				}
-				m_DressingRoom.Layout();
+				else{
+					target._width = 18;
+					target._height = 18;
+					var xClip:MovieClip = this.m_PromoIcon ||  this.m_Owned;
+					target._x = xClip._x - 28;
+					target._y = this.m_Owned._y;
+				}
 			}
-			//creates the list, with fav -> unordered -> trash order
-			if (!m_DressingRoom.m_LeftPanel._PopulateCategoryList){
-				m_DressingRoom.m_LeftPanel._PopulateCategoryList = m_DressingRoom.m_LeftPanel.PopulateCategoryList;
-				m_DressingRoom.m_LeftPanel.PopulateCategoryList = Delegate.create(this, PopulateCategoryList);
+			var f:Function = function(data:DressingRoomNode) {
+				arguments.callee.base.apply(this, arguments);
+				if (data && !this.trash){
+					var mcLoader:MovieClipLoader = new MovieClipLoader();
+					var container = this.createEmptyMovieClip("trash", this.getNextHighestDepth());
+					var container2 = this.createEmptyMovieClip("fav", this.getNextHighestDepth());
+					var path = "DRTweaks\\trash.png";
+					var path2 = "DRTweaks\\fav.png";
+					var resizer:Object = new Object();
+					mcLoader.addListener(this);
+					mcLoader.loadClip(path, container);
+					mcLoader.loadClip(path2, container2);
+				}
+				else{
+					this.onLoadComplete(this.trash);
+					this.onLoadComplete(this.fav);
+				}
 			}
-			m_DressingRoom.m_LeftPanel.RemoveFocus = undefined;
-			
-			// Trash/Fav button creation
-			if (!_global.com.fox.DRTweaks.Hooked){
-				_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.onLoadComplete = function(target:MovieClip){
-					if (target._name == "trash"){
-						target._width = 12;
-						target._height = 16;
-						var xClip:MovieClip = this.m_PromoIcon || this.m_Owned;
-						target._x = xClip._x - 46;
-						target._y = this.m_Owned._y;
-					}
-					else{
-						target._width = 18;
-						target._height = 18;
-						var xClip:MovieClip = this.m_PromoIcon ||  this.m_Owned;
-						target._x = xClip._x - 28;
-						target._y = this.m_Owned._y;
-					}
-				}
-				var f:Function = function(data:DressingRoomNode) {
-					arguments.callee.base.apply(this, arguments);
-					if (data && !this.trash){
-						var mcLoader:MovieClipLoader = new MovieClipLoader();
-						var container = this.createEmptyMovieClip("trash", this.getNextHighestDepth());
-						var container2 = this.createEmptyMovieClip("fav", this.getNextHighestDepth());
-						var path = "DRTweaks\\trash.png";
-						var path2 = "DRTweaks\\fav.png";
-						var resizer:Object = new Object();
-						mcLoader.addListener(this);
-						mcLoader.loadClip(path, container);
-						mcLoader.loadClip(path2, container2);
-					}
-					else{
-						this.onLoadComplete(this.trash);
-						this.onLoadComplete(this.fav);
-					}
-				}
-				f.base = _global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData;
-				_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData = f;
+			f.base = _global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData;
+			_global.GUI.DressingRoom.CategoryListItemRenderer.prototype.setData = f;
 
-				m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("itemPress", this, "ItemPressed");
-				m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar.addEventListener("scroll", this, "setIcons");
-				
-				_global.com.fox.DRTweaks.Hooked = true;
-			}
+			m_DressingRoom.m_LeftPanel.m_CategoryList.addEventListener("itemPress", this, "ItemPressed");
+			m_DressingRoom.m_LeftPanel.m_CategoryList._scrollBar.addEventListener("scroll", this, "setIcons");
 			
-			// Repostions panels on screen, in case of resolution change
-			var newPos:Point = Common.getOnScreen(m_DressingRoom.m_LeftPanel);
-			m_DressingRoom.m_LeftPanel._x = newPos.x;
-			m_DressingRoom.m_LeftPanel._y = newPos.y;
-			DressingRoomLeftX.SetValue(newPos.x);
-			DressingRoomLeftY.SetValue(newPos.y);
+			_global.com.fox.DRTweaks.Hooked = true;
+		}
+		
+		// Repostions panels on screen, in case of resolution change
+		var newPos:Point = Common.getOnScreen(m_DressingRoom.m_LeftPanel);
+		m_DressingRoom.m_LeftPanel._x = newPos.x;
+		m_DressingRoom.m_LeftPanel._y = newPos.y;
+		DressingRoomLeftX.SetValue(newPos.x);
+		DressingRoomLeftY.SetValue(newPos.y);
+		
+		newPos = Common.getOnScreen(m_DressingRoom.m_RightPanel);
+		m_DressingRoom.m_RightPanel._x = newPos.x;
+		m_DressingRoom.m_RightPanel._y = newPos.y;
+		DressingRoomRightX.SetValue(newPos.x);
+		DressingRoomRightY.SetValue(newPos.y);
+		
+		// Drag&Save
+		m_DressingRoom.m_LeftPanel.m_Background.onPress = Delegate.create(this, MoveLeft);
+		m_DressingRoom.m_LeftPanel.m_Background.onRelease = Delegate.create(this, SaveLeft);
+		m_DressingRoom.m_LeftPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveLeft);
+		
+		m_DressingRoom.m_RightPanel.m_Background.onPress = Delegate.create(this, MoveRight);
+		m_DressingRoom.m_RightPanel.m_Background.onRelease = Delegate.create(this, SaveRight);
+		m_DressingRoom.m_RightPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveRight);
+		
+		// cant click what you cant see, makes it easier to drag the left panel.
+		m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
+		PopulateCategoryList();
+		
+		//positioning
+		var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
+		var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x - 100;
+		var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
+		var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
+		var format = label.getTextFormat();
+		
+		//hide trash checkbox
+		m_trashCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_TrashBox", container.getNextHighestDepth(), {_x:x+100, _y:m_DressingRoom.m_LeftPanel.m_Background._y-10 + m_DressingRoom.m_LeftPanel.m_Background._height });
+		m_trashCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
+		m_trashCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
+		m_trashCheckbox.addEventListener("click", this, "TrashChanged");
+		m_trashCheckbox.selected = ShowTrash;
+		// label
+		var trashField:TextField = container.createTextField("m_TrashField", container.getNextHighestDepth(), x+100, m_DressingRoom.m_LeftPanel.m_Background._y + m_DressingRoom.m_LeftPanel.m_Background._height-5, label._width, label._height);
+		trashField.autoSize = "left";
+		trashField.setNewTextFormat(format);
+		trashField.setTextFormat(format);
+		trashField.embedFonts = true;
+		trashField.text = "Show hidden:";
+		trashField._x -= trashField._width;
+		
+		// Key listener and color checkbox
+		if(DRTweaks_keyboard.GetValue()){
+			//Color Checkbox
+			m_colorCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox",container.getNextHighestDepth(), {_x:x, _y:y});
+			m_colorCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
+			m_colorCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
+			m_colorCheckbox.addEventListener("click", this, "OwnedChanged");
+			m_colorCheckbox.selected = OwnedOnly;
 			
-			newPos = Common.getOnScreen(m_DressingRoom.m_RightPanel);
-			m_DressingRoom.m_RightPanel._x = newPos.x;
-			m_DressingRoom.m_RightPanel._y = newPos.y;
-			DressingRoomRightX.SetValue(newPos.x);
-			DressingRoomRightY.SetValue(newPos.y);
+			var TxtField:TextField 	= container.createTextField("m_ownedColor", container.getNextHighestDepth(), x, label._y, label._width, label._height);
+			TxtField.autoSize = "left";
+			TxtField.setNewTextFormat(format);
+			TxtField.setTextFormat(format)
+			TxtField.embedFonts = true;
+			TxtField.text = "Unowned Colours:"
+			TxtField._x -= TxtField._width;
+			m_DressingRoom.m_LeftPanel.m_Background._height += 20;
 			
-			// Drag&Save
-			m_DressingRoom.m_LeftPanel.m_Background.onPress = Delegate.create(this, MoveLeft);
-			m_DressingRoom.m_LeftPanel.m_Background.onRelease = Delegate.create(this, SaveLeft);
-			m_DressingRoom.m_LeftPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveLeft);
-			
-			m_DressingRoom.m_RightPanel.m_Background.onPress = Delegate.create(this, MoveRight);
-			m_DressingRoom.m_RightPanel.m_Background.onRelease = Delegate.create(this, SaveRight);
-			m_DressingRoom.m_RightPanel.m_Background.onReleaseOutside = Delegate.create(this, SaveRight);
-			
-			// cant click what you cant see, makes it easier to drag the left panel.
-			m_DressingRoom.m_LeftPanel.m_HeaderText._visible = false;
-			PopulateCategoryList();
-			
-			//positioning
-			var container:MovieClip = m_DressingRoom.m_LeftPanel.createEmptyMovieClip("DRTweaks", m_DressingRoom.m_LeftPanel.getNextHighestDepth());
-			var x = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._x - 100;
-			var y = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._y;
-			var label:TextField = m_DressingRoom.m_LeftPanel.m_UnownedFilterText;
-			var format = label.getTextFormat();
-			
-			//hide trash checkbox
-			m_trashCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_TrashBox", container.getNextHighestDepth(), {_x:x+100, _y:m_DressingRoom.m_LeftPanel.m_Background._y-10 + m_DressingRoom.m_LeftPanel.m_Background._height });
-			m_trashCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
-			m_trashCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
-			m_trashCheckbox.addEventListener("click", this, "TrashChanged");
-			m_trashCheckbox.selected = ShowTrash;
-			// label
-			var trashField:TextField = container.createTextField("m_TrashField", container.getNextHighestDepth(), x+100, m_DressingRoom.m_LeftPanel.m_Background._y + m_DressingRoom.m_LeftPanel.m_Background._height-5, label._width, label._height);
-			trashField.autoSize = "left";
-			trashField.setNewTextFormat(format);
-			trashField.setTextFormat(format);
-			trashField.embedFonts = true;
-			trashField.text = "Show hidden:";
-			trashField._x -= trashField._width;
-			
-			// Key listener and color checkbox
-			if(DRTweaks_keyboard.GetValue()){
-				//Color Checkbox
-				m_colorCheckbox = container.attachMovie("CheckBoxNoneLabel", "m_ownedColorCheckbox",container.getNextHighestDepth(), {_x:x, _y:y});
-				m_colorCheckbox._width = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._width;
-				m_colorCheckbox._height = m_DressingRoom.m_LeftPanel.m_UnownedCheckBox._height;
-				m_colorCheckbox.addEventListener("click", this, "OwnedChanged");
-				m_colorCheckbox.selected = OwnedOnly;
-				
-				var TxtField:TextField 	= container.createTextField("m_ownedColor", container.getNextHighestDepth(), x, label._y, label._width, label._height);
-				TxtField.autoSize = "left";
-				TxtField.setNewTextFormat(format);
-				TxtField.setTextFormat(format)
-				TxtField.embedFonts = true;
-				TxtField.text = "Unowned Colours:"
-				TxtField._x -= TxtField._width;
-				m_DressingRoom.m_LeftPanel.m_Background._height += 20;
-				
-				// these make sure that the scrollbar is set to focus when needed.
-				Selection.addListener(focusListener);
-				Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList);
-				m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "SetFocus");
-				SetIdle();
-			}
-		}else{
-			Key.removeListener(keyListener);
-			Selection.removeListener(focusListener);
+			// these make sure that the scrollbar is set to focus when needed.
+			Selection.addListener(focusListener);
+			Selection.setFocus(m_DressingRoom.m_LeftPanel.m_CategoryList);
+			m_DressingRoom.m_LeftPanel["m_TabGroup"].addEventListener("change", this, "SetFocus");
+			SetIdle();
 		}
 	}
 	
